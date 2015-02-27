@@ -1,0 +1,37 @@
+{
+  "name": "fdb",
+  "version": "3.0.6",
+  "author": {
+    "name": "FoundationDB",
+    "email": "distribution@foundationdb.com",
+    "url": "https://foundationdb.com"
+  },
+  "description": "Node.js bindings for the FoundationDB database",
+  "keywords": [
+    "FoundationDB",
+    "database",
+    "NoSQL",
+    "ACID"
+  ],
+  "homepage": "https://foundationdb.com",
+  "license": "MIT",
+  "main": "./lib/fdb.js",
+  "cpu": [
+    "x64"
+  ],
+  "dependencies": {
+    "bindings": "*",
+    "nan": "^1.6.2"
+  },
+  "devDependencies": {
+    "jshint": ">= 2.5.6",
+    "promises-aplus-tests": ">= 2.1.0"
+  },
+  "engines": {
+    "node": "0.12.x"
+  },
+  "scripts": {
+    "install": "node-gyp rebuild"
+  },
+  "gypfile": true
+}
