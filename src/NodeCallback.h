@@ -48,7 +48,9 @@ using namespace node;
 struct NodeCallback {
 
 public:
-	NodeCallback(FDBFuture *future, Persistent<Function, CopyablePersistentTraits<Function> > cbFunc) : future(future), cbFunc(cbFunc), refCount(1) {
+	NodeCallback(FDBFuture *future, Handle<Function> cbFunc0) : future(future), refCount(1) {
+		Isolate *isolate = Isolate::GetCurrent();
+		cbFunc.Reset(isolate, cbFunc0);
 		uv_async_init(uv_default_loop(), &handle, &NodeCallback::nodeThreadCallback);
 		uv_ref((uv_handle_t*)&handle);
 		handle.data = this;
@@ -127,7 +129,7 @@ private:
 
 	FDBFuture* future;
 	uv_async_t handle;
-	Persistent<Function, CopyablePersistentTraits<Function> > cbFunc;
+	Persistent<Function> cbFunc;
 	int refCount;
 
 protected:

@@ -49,7 +49,7 @@ Persistent<Function> Transaction::constructor;
 
 struct NodeValueCallback : NodeCallback {
 
-	NodeValueCallback(FDBFuture *future, Persistent<Function, CopyablePersistentTraits<Function> > cbFunc) : NodeCallback(future, cbFunc) { }
+	NodeValueCallback(FDBFuture *future, Handle<Function> cbFunc) : NodeCallback(future, cbFunc) { }
 
 	virtual Handle<Value> extractValue(FDBFuture* future, fdb_error_t& outErr) {
 		Isolate *isolate = Isolate::GetCurrent();
@@ -75,7 +75,7 @@ struct NodeValueCallback : NodeCallback {
 
 struct NodeKeyCallback : NodeCallback {
 
-	NodeKeyCallback(FDBFuture *future, Persistent<Function, CopyablePersistentTraits<Function> > cbFunc) : NodeCallback(future, cbFunc) { }
+	NodeKeyCallback(FDBFuture *future, Handle<Function> cbFunc) : NodeCallback(future, cbFunc) { }
 
 	virtual Handle<Value> extractValue(FDBFuture* future, fdb_error_t& outErr) {
 		Isolate *isolate = Isolate::GetCurrent();
@@ -95,7 +95,7 @@ struct NodeKeyCallback : NodeCallback {
 
 struct NodeVoidCallback : NodeCallback {
 
-	NodeVoidCallback(FDBFuture *future, Persistent<Function, CopyablePersistentTraits<Function> > cbFunc) : NodeCallback(future, cbFunc) { }
+	NodeVoidCallback(FDBFuture *future, Handle<Function> cbFunc) : NodeCallback(future, cbFunc) { }
 
 	virtual Handle<Value> extractValue(FDBFuture* future, fdb_error_t& outErr) {
 		Isolate *isolate = Isolate::GetCurrent();
@@ -106,7 +106,7 @@ struct NodeVoidCallback : NodeCallback {
 
 struct NodeKeyValueCallback : NodeCallback {
 
-	NodeKeyValueCallback(FDBFuture *future, Persistent<Function, CopyablePersistentTraits<Function> > cbFunc) : NodeCallback(future, cbFunc) { }
+	NodeKeyValueCallback(FDBFuture *future, Handle<Function> cbFunc) : NodeCallback(future, cbFunc) { }
 
 	virtual Handle<Value> extractValue(FDBFuture* future, fdb_error_t& outErr) {
 		Isolate *isolate = Isolate::GetCurrent();
@@ -155,7 +155,7 @@ struct NodeKeyValueCallback : NodeCallback {
 
 struct NodeVersionCallback : NodeCallback {
 
-	NodeVersionCallback(FDBFuture *future, Persistent<Function, CopyablePersistentTraits<Function> > cbFunc) : NodeCallback(future, cbFunc) { }
+	NodeVersionCallback(FDBFuture *future, Handle<Function> cbFunc) : NodeCallback(future, cbFunc) { }
 
 	virtual Handle<Value> extractValue(FDBFuture* future, fdb_error_t& outErr) {
 		Isolate *isolate = Isolate::GetCurrent();
@@ -175,7 +175,7 @@ struct NodeVersionCallback : NodeCallback {
 
 struct NodeStringArrayCallback : NodeCallback {
 
-	NodeStringArrayCallback(FDBFuture *future, Persistent<Function, CopyablePersistentTraits<Function> > cbFunc) : NodeCallback(future, cbFunc) { }
+	NodeStringArrayCallback(FDBFuture *future, Handle<Function> cbFunc) : NodeCallback(future, cbFunc) { }
 
 	virtual Handle<Value> extractValue(FDBFuture *future, fdb_error_t& outErr) {
 		Isolate *isolate = Isolate::GetCurrent();
@@ -214,10 +214,11 @@ FDBTransaction* Transaction::GetTransactionFromArgs(const FunctionCallbackInfo<V
 	return node::ObjectWrap::Unwrap<Transaction>(info.Holder())->tr;
 }
 
-Persistent<Function, CopyablePersistentTraits<Function> > Transaction::GetCallback(Handle<Value> funcVal) {
+Handle<Function> Transaction::GetCallback(Handle<Value> funcVal) {
 	Isolate *isolate = Isolate::GetCurrent();
-	Persistent<Function, CopyablePersistentTraits<Function> > callback(isolate, Handle<Function>::Cast(funcVal));
-	return callback;
+	EscapableHandleScope scope(isolate);
+	Local<Function> callback = Local<Function>::New(isolate, Handle<Function>::Cast(funcVal));
+	return scope.Escape(callback);
 }
 
 void Transaction::Set(const FunctionCallbackInfo<Value>& info){
@@ -308,7 +309,7 @@ void Transaction::Watch(const FunctionCallbackInfo<Value>& info) {
 	uint8_t *keyStr = (uint8_t*)(Buffer::Data(info[0]->ToObject()));
 	int keyLen = (int)Buffer::Length(info[0]->ToObject());
 
-	Persistent<Function> cb(isolate, Handle<Function>::Cast(info[1]));
+	Local<Function> cb = Local<Function>::New(isolate, Handle<Function>::Cast(info[1]));
 
 	FDBFuture *f = fdb_transaction_watch(trPtr->tr, keyStr, keyLen);
 	NodeVoidCallback *callback = new NodeVoidCallback(f, cb);

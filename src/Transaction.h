@@ -70,7 +70,7 @@ class Transaction: public node::ObjectWrap {
 		FDBTransaction *tr;
 
 		static FDBTransaction* GetTransactionFromArgs(const v8::FunctionCallbackInfo<v8::Value>& info);
-		static v8::Persistent<v8::Function, CopyablePersistentTraits<Function> > GetCallback(const v8::Handle<v8::Value> funcVal);
+		static v8::Handle<v8::Function> GetCallback(const v8::Handle<v8::Value> funcVal);
 };
 
 class Watch : public node::ObjectWrap {
