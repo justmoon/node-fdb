@@ -62,13 +62,13 @@ void FdbOptions::AddOption(Scope scope, std::string name, int value, ParameterTy
 	if(scope == NetworkOption || scope == ClusterOption || scope == DatabaseOption || scope == TransactionOption || scope == MutationType) {
 		bool isSetter = scope != MutationType;
 		tpl = Local<FunctionTemplate>::New(isolate, optionTemplates[scope]);
-		tpl->PrototypeTemplate()->Set(v8::String::NewFromUtf8(isolate, ToJavaScriptName(name, isSetter).c_str(), v8::String::kInternalizedString),
-			v8::FunctionTemplate::New(isolate, scopeInfo[scope].optionFunction, v8::Integer::New(isolate, value))->GetFunction());
+		tpl->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, ToJavaScriptName(name, isSetter).c_str(), String::kInternalizedString),
+			FunctionTemplate::New(isolate, scopeInfo[scope].optionFunction, Integer::New(isolate, value))->GetFunction());
 		parameterTypes[scope][value] = type;
 	}
 	else if(scope == StreamingMode) {
 		tpl = Local<FunctionTemplate>::New(isolate, optionTemplates[scope]);
-		tpl->PrototypeTemplate()->Set(v8::String::NewFromUtf8(isolate, ToJavaScriptName(name, false).c_str(), v8::String::kInternalizedString), v8::Integer::New(isolate, value));
+		tpl->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, ToJavaScriptName(name, false).c_str(), String::kInternalizedString), Integer::New(isolate, value));
 	}
 	else if(scope == ConflictRangeType) {
 		//Conflict range type enum is not exposed to JS code
