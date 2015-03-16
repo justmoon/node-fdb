@@ -28,7 +28,8 @@
     "promises-aplus-tests": ">= 2.1.0"
   },
   "engines": {
-    "node": "0.12.x"
+    "node": "0.12.x",
+    "iojs": "*"
   },
   "scripts": {
     "install": "node-gyp rebuild"
