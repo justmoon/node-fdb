@@ -35,7 +35,7 @@
 using namespace v8;
 using namespace node;
 
-FdbOptions::PersistentFnTemplateMap FdbOptions::optionTemplates;
+FdbOptions::PersistentFnTemplateMap FdbOptions::optionTemplates(Isolate::GetCurrent());
 std::map<FdbOptions::Scope, ScopeInfo> FdbOptions::scopeInfo;
 std::map<FdbOptions::Scope, std::map<int, FdbOptions::ParameterType>> FdbOptions::parameterTypes;
 
@@ -44,15 +44,13 @@ FdbOptions::~FdbOptions() {
 	Clear();
 }
 
-void FdbOptions::InitOptionsTemplate(PersistentFnTemplate &tpl, const char *className) {
+void FdbOptions::InitOptionsTemplate(Scope scope, const char *className) {
 	Isolate *isolate = Isolate::GetCurrent();
-	EscapableHandleScope scope(isolate);
 
-	tpl.Reset(isolate, FunctionTemplate::New(isolate, New));
-
-	Local<FunctionTemplate> tplLocal = Local<FunctionTemplate>::New(isolate, tpl);
-	tplLocal->SetClassName(String::NewFromUtf8(isolate, className, String::kInternalizedString));
-	tplLocal->InstanceTemplate()->SetInternalFieldCount(1);
+	Local<FunctionTemplate> tpl = Local<FunctionTemplate>::New(isolate, FunctionTemplate::New(isolate, New));
+	optionTemplates.Set(scope, tpl);
+	tpl->SetClassName(String::NewFromUtf8(isolate, className, String::kInternalizedString));
+	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 }
 
 void FdbOptions::AddOption(Scope scope, std::string name, int value, ParameterType type) {
@@ -61,13 +59,13 @@ void FdbOptions::AddOption(Scope scope, std::string name, int value, ParameterTy
 	Local<FunctionTemplate> tpl;
 	if(scope == NetworkOption || scope == ClusterOption || scope == DatabaseOption || scope == TransactionOption || scope == MutationType) {
 		bool isSetter = scope != MutationType;
-		tpl = Local<FunctionTemplate>::New(isolate, optionTemplates[scope]);
+		tpl = optionTemplates.Get(scope);
 		tpl->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, ToJavaScriptName(name, isSetter).c_str(), String::kInternalizedString),
 			FunctionTemplate::New(isolate, scopeInfo[scope].optionFunction, Integer::New(isolate, value))->GetFunction());
 		parameterTypes[scope][value] = type;
 	}
 	else if(scope == StreamingMode) {
-		tpl = Local<FunctionTemplate>::New(isolate, optionTemplates[scope]);
+		tpl = optionTemplates.Get(scope);
 		tpl->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, ToJavaScriptName(name, false).c_str(), String::kInternalizedString), Integer::New(isolate, value));
 	}
 	else if(scope == ConflictRangeType) {
@@ -81,15 +79,12 @@ void FdbOptions::New(const FunctionCallbackInfo<Value>& info) {
 }
 
 void FdbOptions::Clear() {
-	for (PersistentFnTemplateMap::iterator iter = optionTemplates.begin(); iter != optionTemplates.end(); ++iter)
-    iter->second.Reset();
-
-	optionTemplates.clear();
+	optionTemplates.Clear();
 }
 
 void FdbOptions::WeakCallback(const WeakCallbackData<Value, FdbOptions>& data) { }
 
-Handle<Value> FdbOptions::NewInstance(PersistentFnTemplate& optionsTemplate, Handle<Value> source) {
+Handle<Value> FdbOptions::NewInstance(Local<FunctionTemplate> optionsTemplate, Handle<Value> source) {
 	Isolate *isolate = Isolate::GetCurrent();
 	EscapableHandleScope scope(isolate);
 
@@ -104,13 +99,11 @@ Handle<Value> FdbOptions::NewInstance(PersistentFnTemplate& optionsTemplate, Han
 }
 
 Handle<Value> FdbOptions::CreateOptions(Scope scope, Handle<Value> source) {
-	return NewInstance(optionTemplates[scope], source);
+	return NewInstance(optionTemplates.Get(scope), source);
 }
 
 Handle<Value> FdbOptions::CreateEnum(Scope scope) {
-	Isolate *isolate = Isolate::GetCurrent();
-
-	Local<FunctionTemplate> funcTpl = Local<FunctionTemplate>::New(isolate, optionTemplates[scope]);
+	Local<FunctionTemplate> funcTpl = optionTemplates.Get(scope);
 	return funcTpl->GetFunction()->NewInstance();
 }
 
@@ -266,7 +259,7 @@ void FdbOptions::Init() {
 	//scopeInfo[ConflictRangeType] = ScopeInfo("ConflictRangeType", NULL);
 
 	for(auto itr = scopeInfo.begin(); itr != scopeInfo.end(); ++itr)
-		InitOptionsTemplate(optionTemplates[itr->first], itr->second.templateClassName.c_str());
+		InitOptionsTemplate(itr->first, itr->second.templateClassName.c_str());
 
 	InitOptions();
 }

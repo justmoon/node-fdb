@@ -30,6 +30,7 @@
 
 #include <foundationdb/fdb_c.h>
 #include <node.h>
+#include <v8-util.h>
 #include <node_object_wrap.h>
 #include <string>
 #include <map>
@@ -90,17 +91,17 @@ class FdbOptions : public node::ObjectWrap {
 
 	private:
 		typedef v8::Persistent<v8::FunctionTemplate> PersistentFnTemplate;
-		typedef std::map<Scope, PersistentFnTemplate> PersistentFnTemplateMap;
+		typedef v8::PersistentValueMap<Scope, v8::FunctionTemplate, v8::DefaultPersistentValueMapTraits<Scope, v8::FunctionTemplate > > PersistentFnTemplateMap;
 
 		static void New(const v8::FunctionCallbackInfo<v8::Value>& info);
-		static v8::Handle<v8::Value> NewInstance(PersistentFnTemplate& optionsTemplate, v8::Handle<v8::Value> source);
+		static v8::Handle<v8::Value> NewInstance(v8::Local<v8::FunctionTemplate> optionsTemplate, v8::Handle<v8::Value> source);
 
 		FdbOptions();
 		~FdbOptions();
 
 		void Clear();
 
-		static void InitOptionsTemplate(PersistentFnTemplate &tpl, const char *className);
+		static void InitOptionsTemplate(Scope scope, const char *className);
 		static void InitOptions();
 
 		static void AddOption(Scope scope, std::string name, int value, ParameterType type);
