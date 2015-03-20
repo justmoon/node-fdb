@@ -62,6 +62,7 @@ struct ScopeInfo {
 class FdbOptions : public node::ObjectWrap {
 	public:
 		static void Init();
+		static void Clear();
 
 		enum ParameterType {
 			None,
@@ -97,9 +98,6 @@ class FdbOptions : public node::ObjectWrap {
 		static v8::Handle<v8::Value> NewInstance(v8::Local<v8::FunctionTemplate> optionsTemplate, v8::Handle<v8::Value> source);
 
 		FdbOptions();
-		~FdbOptions();
-
-		void Clear();
 
 		static void InitOptionsTemplate(Scope scope, const char *className);
 		static void InitOptions();
@@ -110,7 +108,7 @@ class FdbOptions : public node::ObjectWrap {
 		static std::string ToJavaScriptName(std::string optionName, bool isSetter);
 
 		static std::map<Scope, ScopeInfo> scopeInfo;
-		static PersistentFnTemplateMap optionTemplates;
+		static PersistentFnTemplateMap *optionTemplates;
 		static std::map<Scope, std::map<int, ParameterType>> parameterTypes;
 
 		v8::Persistent<v8::Value> source;

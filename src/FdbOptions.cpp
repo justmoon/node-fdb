@@ -35,20 +35,17 @@
 using namespace v8;
 using namespace node;
 
-FdbOptions::PersistentFnTemplateMap FdbOptions::optionTemplates(Isolate::GetCurrent());
+FdbOptions::PersistentFnTemplateMap *FdbOptions::optionTemplates;
 std::map<FdbOptions::Scope, ScopeInfo> FdbOptions::scopeInfo;
 std::map<FdbOptions::Scope, std::map<int, FdbOptions::ParameterType>> FdbOptions::parameterTypes;
 
 FdbOptions::FdbOptions() { }
-FdbOptions::~FdbOptions() {
-	Clear();
-}
 
 void FdbOptions::InitOptionsTemplate(Scope scope, const char *className) {
 	Isolate *isolate = Isolate::GetCurrent();
 
 	Local<FunctionTemplate> tpl = Local<FunctionTemplate>::New(isolate, FunctionTemplate::New(isolate, New));
-	optionTemplates.Set(scope, tpl);
+	optionTemplates->Set(scope, tpl);
 	tpl->SetClassName(String::NewFromUtf8(isolate, className, String::kInternalizedString));
 	tpl->InstanceTemplate()->SetInternalFieldCount(1);
 }
@@ -59,13 +56,13 @@ void FdbOptions::AddOption(Scope scope, std::string name, int value, ParameterTy
 	Local<FunctionTemplate> tpl;
 	if(scope == NetworkOption || scope == ClusterOption || scope == DatabaseOption || scope == TransactionOption || scope == MutationType) {
 		bool isSetter = scope != MutationType;
-		tpl = optionTemplates.Get(scope);
+		tpl = optionTemplates->Get(scope);
 		tpl->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, ToJavaScriptName(name, isSetter).c_str(), String::kInternalizedString),
 			FunctionTemplate::New(isolate, scopeInfo[scope].optionFunction, Integer::New(isolate, value))->GetFunction());
 		parameterTypes[scope][value] = type;
 	}
 	else if(scope == StreamingMode) {
-		tpl = optionTemplates.Get(scope);
+		tpl = optionTemplates->Get(scope);
 		tpl->PrototypeTemplate()->Set(String::NewFromUtf8(isolate, ToJavaScriptName(name, false).c_str(), String::kInternalizedString), Integer::New(isolate, value));
 	}
 	else if(scope == ConflictRangeType) {
@@ -79,7 +76,8 @@ void FdbOptions::New(const FunctionCallbackInfo<Value>& info) {
 }
 
 void FdbOptions::Clear() {
-	optionTemplates.Clear();
+	optionTemplates->Clear();
+	delete optionTemplates;
 }
 
 void FdbOptions::WeakCallback(const WeakCallbackData<Value, FdbOptions>& data) { }
@@ -99,11 +97,11 @@ Handle<Value> FdbOptions::NewInstance(Local<FunctionTemplate> optionsTemplate, H
 }
 
 Handle<Value> FdbOptions::CreateOptions(Scope scope, Handle<Value> source) {
-	return NewInstance(optionTemplates.Get(scope), source);
+	return NewInstance(optionTemplates->Get(scope), source);
 }
 
 Handle<Value> FdbOptions::CreateEnum(Scope scope) {
-	Local<FunctionTemplate> funcTpl = optionTemplates.Get(scope);
+	Local<FunctionTemplate> funcTpl = optionTemplates->Get(scope);
 	return funcTpl->GetFunction()->NewInstance();
 }
 
@@ -250,6 +248,8 @@ std::string FdbOptions::ToJavaScriptName(std::string optionName, bool isSetter) 
 }
 
 void FdbOptions::Init() {
+	optionTemplates = new PersistentFnTemplateMap(Isolate::GetCurrent());
+
 	scopeInfo[NetworkOption] = ScopeInfo("FdbNetworkOptions", SetNetworkOption);
 	scopeInfo[ClusterOption] = ScopeInfo("FdbClusterOptions", SetClusterOption);
 	scopeInfo[DatabaseOption] = ScopeInfo("FdbDatabaseOptions", SetDatabaseOption);

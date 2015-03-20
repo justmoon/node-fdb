@@ -109,6 +109,8 @@ void StopNetwork(const FunctionCallbackInfo<Value>& info) {
 	//while(!V8::IdleNotification());
 
 	info.GetReturnValue().SetNull();
+
+	FdbOptions::Clear();
 }
 
 void init(Handle<Object> target){
